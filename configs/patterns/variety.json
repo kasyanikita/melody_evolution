@@ -1,0 +1,15 @@
+// Максимально разнообразная мелодия (избегает монотонности)
+// Этот конфиг штрафует монотонность, награждая за разнообразные интервалы и движение.
+
+{
+    "monotony": { "weight": -1.0 },
+    "ascending_scale": { "weight": 0.2 },
+    "descending_scale": { "weight": 0.2 },
+    "arpeggio": { "weight": 0.2 },
+    "repetition": { "weight": -0.5 },
+    "interval_variety": { "weight": 0.3 },
+    "smoothness": { "weight": 0.1 },
+    "symmetry": { "weight": 0.1 },
+    "tonic_stability": { "weight": 0.0 },
+    "tonal_purity": { "weight": 0.1, "scale": [48, 50, 52, 53, 55, 57, 59, 60] }
+}

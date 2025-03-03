@@ -1,0 +1,15 @@
+// Простой мажорный стиль (поощряет тональную чистоту)
+// Этот конфиг поощряет ноты в заданной тональности (например, C major).
+
+{
+    "monotony": { "weight": -0.2 },
+    "ascending_scale": { "weight": 0.2 },
+    "descending_scale": { "weight": 0.2 },
+    "arpeggio": { "weight": 0.1 },
+    "repetition": { "weight": -0.1 },
+    "interval_variety": { "weight": 0.1 },
+    "smoothness": { "weight": 0.2 },
+    "symmetry": { "weight": 0.1 },
+    "tonic_stability": { "weight": 0.1 },
+    "tonal_purity": { "weight": 0.5, "scale": [48, 50, 52, 53, 55, 57, 59, 60] }
+}

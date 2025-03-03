@@ -6,6 +6,11 @@ import pygame
 import numpy as np
 from mido import MidiFile, MidiTrack, Message
 
+from heuristics import Heuristic
+
+USE_HEURISTICS = True
+HEURISTIC_CONFIG_PATH = 'configs/patterns/arpeggio.json'
+
 code2name = {
     48: "C3",
     49: "C#3",
@@ -51,16 +56,17 @@ def generate_random_melodies(n=10):
     for i in range(n):
         notes = [random.randint(48, 83) for _ in range(n_melody_notes)]
         durations = random.choices([240, 480, 960, 1920], k=n_melody_notes)
-        
+
         melodies[i] = {
             'notes': notes,
             'durations': durations
         }
-        
+
     return melodies
 
 
 def save_melodies(melodies):
+    """ Saves melodies as MIDI and JSON files. """
     for i in range(len(melodies)):
         mid = MidiFile()
         track = MidiTrack()
@@ -75,9 +81,10 @@ def save_melodies(melodies):
         
     with open(f'melodies.json', 'w') as f:
         json.dump(melodies, f, indent=4)
-            
-            
+
+
 def play_melody(index):
+    """ Plays a generated melody using pygame. """
     pygame.init()
 
     pygame.mixer.init()
@@ -86,22 +93,25 @@ def play_melody(index):
 
     while pygame.mixer.music.get_busy():
         pygame.time.Clock().tick(10)
-        
-        
+
+
 def random_pairs(n):
+    """ Generates random pairs of melodies for tournament selection. """
     numbers = list(range(n))
     random.shuffle(numbers)
-    
+
     pairs = list(zip(numbers[::2], numbers[1::2]))
-    
+
     return pairs
 
 
 def chance(percent):
+    """ Returns True with the given probability in percent. """
     return random.random() < percent / 100
 
 
 def pair_round(idx, pair):
+    """ Handles human-based melody selection. """
     print(f"Pair #{idx + 1}")
     print("Choose the action: \n1.Play the first melody\n2.Play the second melody\n3.Choose the winner")
     action = -1
@@ -118,7 +128,16 @@ def pair_round(idx, pair):
     return pair[winner - 1]
 
 
+def heuristic_selection(melodies):
+    """ Uses heuristics to automatically rank melodies and select the best ones. """
+    heuristic = Heuristic(HEURISTIC_CONFIG_PATH)
+    sorted_melodies = sorted(melodies.keys(), key=lambda i: heuristic.evaluate(melodies[i]['notes']), reverse=True)
+    print(heuristic.evaluate(melodies[0]['notes']))
+    return sorted_melodies[:len(sorted_melodies) // 2]  # Select top 50%
+
+
 def crossover(melodies, winners):
+    """ Creates a new generation using crossover of winners. """
     new_generation = {}
     for i in range(len(melodies)):
         first_parent, second_parent = random.sample(winners, 2)
@@ -148,6 +167,7 @@ def crossover(melodies, winners):
 
 
 def mutation(melodies):
+    """ Introduces random mutations to the melodies. """
     for i in range(len(melodies)):
         for j in range(len(melodies[i]['notes'])):
             if (chance(5)):
@@ -165,6 +185,7 @@ def mutation(melodies):
 
 
 def load_melodies_data():
+    """ Loads melodies from a JSON file. """
     with open("melodies.json") as f:
         melodies = json.load(f)
     
@@ -181,17 +202,23 @@ def load_melodies_data():
 if __name__ == "__main__":
     n_melodies = 6
     n_melody_notes = 8
+
     melodies = generate_random_melodies(n_melodies)
     save_melodies(melodies)
     # melodies = load_melodies_data()
 
-    while True:
-        pairs = random_pairs(n_melodies)
+    for _ in range(1000):
         winners = []
-        for i, pair in enumerate(pairs):
-            win_idx = pair_round(i, pair)
-            winners.append(win_idx)
+
+        if USE_HEURISTICS:
+            winners = heuristic_selection(melodies)
+        else:
+            pairs = random_pairs(n_melodies)
+            for i, pair in enumerate(pairs):
+                winners.append(pair_round(i, pair))
         
         melodies = crossover(melodies, winners)
         melodies = mutation(melodies)
         save_melodies(melodies)
+    
+    play_melody(0)
