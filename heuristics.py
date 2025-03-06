@@ -1,4 +1,5 @@
 import inspect
+from typing import Optional
 import numpy as np
 import json
 
@@ -33,13 +34,12 @@ class HeuristicConfig:
     def load_config(self):
         """ Loads heuristic configuration from a JSON file or falls back to default settings. """
         try:
-            with open(self.config_path, "r") as f:
+            with open(self.config_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
                 # Ensure all heuristic keys exist in the loaded config
                 for heuristic, default_values in self.DEFAULT_CONFIG.items():
                     if heuristic not in data:
-                        # data[heuristic] = default_values
                         continue
                     else:
                         # Ensure all default keys exist within each heuristic config
@@ -48,19 +48,24 @@ class HeuristicConfig:
                                 data[heuristic][key] = value
 
                 return data
-        except (FileNotFoundError, json.JSONDecodeError):
-            return self.DEFAULT_CONFIG.copy()
+
+        except FileNotFoundError:
+            print(f"Warning: Configuration file '{self.config_path}' not found. Using default configuration.")
+        except json.JSONDecodeError:
+            print(f"Error: Failed to read configuration file '{self.config_path}'. Using default configuration.")
+
+        return self.DEFAULT_CONFIG.copy()
 
     def save_config(self):
         """ Saves the current heuristic configuration to a JSON file. """
-        with open(self.config_path, "w") as f:
+        with open(self.config_path, "w", encoding="utf-8") as f:
             json.dump(self.config, f, indent=4)
 
     def get_weight(self, heuristic_name):
         """ Retrieves the weight of a specified heuristic. """
         return self.config.get(heuristic_name, {}).get("weight", 0.0)
 
-    def update_weight(self, heuristic_name, value):
+    def update_weight(self, heuristic_name: str, value: float):
         """
         Updates a heuristic weight and saves the configuration.
 
@@ -78,7 +83,7 @@ class HeuristicConfig:
         heuristic_data = self.config.get(heuristic_name, {})
         return {k: v for k, v in heuristic_data.items() if k != "weight"}
 
-    def update_parameters(self, heuristic_name, params):
+    def update_parameters(self, heuristic_name: str, params: dict):
         """
         Updates parameters for a specific heuristic and saves the configuration.
 
@@ -114,7 +119,7 @@ class Heuristic:
         if invalid_metrics:
             raise ValueError(f"Invalid metric names: {invalid_metrics}")
 
-    def normalize_weights(self, selected_metrics):
+    def normalize_weights(self, selected_metrics: list[str]):
         """
         Adjusts heuristic weights so that their absolute values sum to 1.
         This ensures proper weighting even when some weights are negative.
@@ -130,7 +135,7 @@ class Heuristic:
 
         return {m: w / total_abs_weight for m, w in selected_weights.items()}
 
-    def evaluate(self, melody, metrics=None):
+    def evaluate(self, melody: list[int], metrics: Optional[list[str]] = None):
         """
         Evaluates a single melody based on the given or all available heuristics.
         
