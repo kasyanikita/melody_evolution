@@ -23,13 +23,15 @@ def main():
     parser.add_argument("-p", "--play", action="store_true", help="Play the best melody")
     parser.add_argument("-a", "--algorithm", choices=["melody", "annealing"], default="melody", help="Select the algorithm: melody (default) or simulated annealing")
     parser.add_argument("-hc", "--heuristic-config", type=str, default='configs/patterns/monotonic.json', help="Path to heuristic configuration file")
+    parser.add_argument("-ms", "--manual_selection", action="store_true", help="Enable manual selection algorithm")
+    parser.add_argument("-cs", "--crossover_split", type=int, default=4, help="Break the melody into crossover_split segments while crossover")
     
     args = parser.parse_args()
     
-    heuristic = Heuristic(args.heuristic_config)
+    heuristic = None if args.manual_selection else Heuristic(args.heuristic_config)
     
     if args.algorithm == "melody":
-        generator = MelodyGenerator(args.melodies, args.notes, heuristic)
+        generator = MelodyGenerator(args.melodies, args.notes, args.crossover_split, heuristic)
     else:
         generator = SimulatedAnnealingGA(args.melodies, args.notes, heuristic)
     

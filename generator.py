@@ -17,7 +17,7 @@ class BaseMelodyGenerator:
     Base class for generating and evolving melodies using heuristic evaluation
     """
 
-    def __init__(self, n_melodies=6, n_melody_notes=8, heuristic: Optional[Union[str, Heuristic]] = None):
+    def __init__(self, n_melodies=6, n_melody_notes=8, n_crossover_split=4, heuristic: Optional[Union[str, Heuristic]] = None):
         """
         Initializes the melody generator with a given number of melodies and notes.
 
@@ -28,6 +28,7 @@ class BaseMelodyGenerator:
         """
         self.n_melodies = n_melodies
         self.n_melody_notes = n_melody_notes
+        self.n_crossover_split = n_crossover_split
         
         self.heuristic = None
         if isinstance(heuristic, str):
@@ -38,6 +39,7 @@ class BaseMelodyGenerator:
             print("Manual melody selection")
 
         self.melodies = self.generate_random_melodies()
+        self.save_melodies()
     
     def generate_random_melodies(self) -> dict:
         """
@@ -177,18 +179,32 @@ class MelodyGenerator(BaseMelodyGenerator):
 
     def crossover(self, winners) -> list[int]:
         """
-        Generates a new generation of melodies by combining parts of selected winners.
+        Generates a new generation of melodies by combining random parts of selected winners.
+        Melodies are split into self.n_crossover_split equal parts.
 
         :param winners: A list of melody indices selected for reproduction.
         """
         new_generation = {}
+        segment_length = self.n_melody_notes // self.n_crossover_split
+        
         for i in range(self.n_melodies):
-            p1, p2 = random.sample(winners, 2)
-            split_idx = random.randint(1, self.n_melody_notes - 1)
+            new_notes = []
+            new_durations = []
+            
+            for segment in range(self.n_crossover_split):
+                parent_idx = random.choice(winners)
+                
+                start = segment * segment_length
+                end = start + segment_length
+                
+                new_notes.extend(self.melodies[parent_idx]['notes'][start:end])
+                new_durations.extend(self.melodies[parent_idx]['durations'][start:end])
+            
             new_generation[i] = {
-                "notes": self.melodies[p1]['notes'][:split_idx] + self.melodies[p2]['notes'][split_idx:],
-                "durations": self.melodies[p1]['durations'][:split_idx] + self.melodies[p2]['durations'][split_idx:],
+                "notes": new_notes,
+                "durations": new_durations,
             }
+        
         self.melodies = new_generation
     
     def run(self, generations: int = 1000) -> MelodyGenerator:
@@ -202,6 +218,7 @@ class MelodyGenerator(BaseMelodyGenerator):
             winners = self.heuristic_selection() if self.heuristic is not None else self.manual_selection()
             self.crossover(winners)
             self.melodies = self.mutation(self.melodies)
+            self.save_melodies()
         return self
 
 
